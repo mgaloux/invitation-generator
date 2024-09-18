@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Monument+Grotesk:wght@400;700&family=Monument+Grotesk+Mono:wght@400;700&display=swap');
+
+.font-mono {
+  font-family: 'Monument Grotesk Mono', sans-serif;
+}
+
+.font-grotesk {
+  font-family: 'Monument Grotesk', sans-serif;
+}
+
+@layer base {
+  :root {
+    --monument-grotesk: "Monument Grotesk Mono", sans-serif;
+    --primary-50: #f5f5f6;
+    --primary-100: #e7e6ea;
+    --primary-200: #d7d6dc;
+    --primary-300: #c6c5cd;
+    --primary-400: #a09eac;
+    --primary-500: #7a778a;
+    --primary-600: #5e5971;
+    --primary-700: #413c58;
+    --primary-800: #1e1a3c;
+    --primary-900: #17132d;
+    --primary-950: #0a0819;
+
+    --accent-50: #f1faf9;
+    --accent-100: #ddf2ef;
+    --accent-200: #c6eae5;
+    --accent-300: #afe2da;
+    --accent-400: #9ddbd2;
+    --accent-500: #8cd5ca;
+    --accent-600: #78cdc0;
+    --accent-700: #5bc3b3;
+    --accent-800: #41b6a4;
+    --accent-900: #1b9179;
+    --accent-950: #10745c;
+
+    --red-50: #fef2f2;
+    --red-100: #fee2e2;
+    --red-200: #fecaca;
+    --red-300: #fca5a5;
+    --red-400: #f87171;
+    --red-500: #ef4444;
+    --red-600: #dc2626;
+    --red-700: #b91c1c;
+    --red-800: #991b1b;
+    --red-900: #7f1d1d;
+    --red-950: #450a0a;
+
+    --orange-50: #fff7ed;
+    --orange-100: #ffedd5;
+    --orange-200: #fed7aa;
+    --orange-300: #fdba74;
+    --orange-400: #fb923c;
+    --orange-500: #f97316;
+    --orange-600: #ea580c;
+    --orange-700: #c2410c;
+    --orange-800: #9a3412;
+    --orange-900: #7c2d12;
+    --orange-950: #431407;
+
+    --indigo-300: #a5b4fc;
+    --indigo-600: #4f46e5;
+
+    --purple-300: #d8b4fe;
+    --purple-600: #9333ea;
+
+    --background: var(--primary-50);
+    --foreground: var(--primary-950);
+
+    --card: var(--primary-50);
+    --card-foreground: var(--primary-950);
+
+    --popover: var(--primary-50);
+    --popover-foreground: var(--primary-950);
+
+    --primary: var(--primary-800);
+    --primary-foreground: var(--primary-50);
+
+    --secondary: var(--primary-100);
+    --secondary-foreground: var(--primary-800);
+
+    --muted: var(--primary-100);
+    --muted-foreground: var(--primary-500);
+
+    --accent: var(--primary-100);
+    --accent-foreground: var(--primary-800);
+
+    --destructive: var(--red-800);
+    --destructive-foreground: var(--primary-50);
+
+    --border: var(--primary-200);
+    --input: var(--primary-200);
+    --ring: var(--accent-700);
+
+    --tag-high: var(--accent-950);
+    --tag-low: var(--orange-700);
+    --tag-danger: var(--red-800);
+    --tag-foreground: var(--primary-50);
+
+    --node-concept: var(--purple-600);
+    --node-class: var(--indigo-600);
+    --node-variable: var(--accent-900);
+
+    --radius: 0.5rem;
+  }
+
+  body {
+    font-family: var(--monument-grotesk);
+  }
+
+  .dark {
+    --background: var(--primary-950);
+    --foreground: var(--primary-50);
+
+    --card: var(--primary-800);
+    --card-foreground: var(--primary-50);
+
+    --popover: var(--primary-950);
+    --popover-foreground: var(--primary-50);
+
+    --primary: var(--primary-50);
+    --primary-foreground: var(--primary-800);
+
+    --secondary: var(--primary-900);
+    --secondary-foreground: var(--primary-50);
+
+    --muted: var(--primary-800);
+    --muted-foreground: var(--primary-400);
+
+    --accent: var(--primary-800);
+    --accent-foreground: var(--primary-50);
+
+    --destructive: var(--red-500);
+    --destructive-foreground: var(--primary-50);
+
+    --border: var(--primary-600);
+    --input: var(--primary-600);
+    --ring: var(--accent-700);
+
+    --tag-high: var(--accent-800);
+    --tag-low: var(--orange-400);
+    --tag-danger: var(--red-500);
+    --tag-foreground: var(--primary-950);
+
+    --node-concept: var(--purple-300);
+    --node-class: var(--indigo-300);
+    --node-variable: var(--accent-300);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+svg {
+  display: unset;
+  vertical-align: unset;
+}
