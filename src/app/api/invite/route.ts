@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import sharp from 'sharp';
-import { promises as fs } from 'fs';
 
 // POST request handler
 export async function POST(request: Request) {
