@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/invite.ts": {
+    "api/invite/route.ts": {
       "memory": 1024,
       "maxDuration": 10
     }
