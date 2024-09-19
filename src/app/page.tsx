@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import DragAndDrop from "./DragAndDrop";
 import Image from "next/image";
+import imageCompression from 'browser-image-compression';
 
 const fonts = [
   { name: "Monument Grotesk Mono", className: "font-mono" },
@@ -20,7 +21,7 @@ const Home: React.FC = () => {
   const [templatePreview, setTemplatePreview] = useState<string | null>(null);
   const [newGuest, setNewGuest] = useState<string>("");
   const [guests, setGuests] = useState<string[]>([]);
-  const [fontSize, setFontSize] = useState<number>(92);
+  const [fontSize, setFontSize] = useState<number>(48);
   const [fontColor, setFontColor] = useState<string>("white");
   const [fontFamily, setFontFamily] = useState<string>("Monument Grotesk Mono");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -62,7 +63,14 @@ const Home: React.FC = () => {
       return;
     }
 
-    const file = acceptedFiles[0];
+    const options = {
+      maxSizeMB: 4, // Set to 1MB
+      maxWidthOrHeight: 1920, // Set to resize large images
+      useWebWorker: true,
+    };
+
+    const file = await imageCompression(acceptedFiles[0], options);
+
     setTemplateImage(file);
     const fileURL = URL.createObjectURL(file);
     setTemplatePreview(fileURL);
