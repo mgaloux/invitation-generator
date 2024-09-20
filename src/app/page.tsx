@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import DragAndDrop from "./DragAndDrop";
 import Image from "next/image";
-import imageCompression from "browser-image-compression";
+import imageCompression from 'browser-image-compression';
 
 const fonts = [
   { name: "Monument Grotesk Mono", className: "font-mono" },
-  { name: "Monument Grotesk", className: "font-grotesk" },
+  { name: "Monument Grotesk", className: "font-grotesk" }
 ];
 
 const Home: React.FC = () => {
@@ -84,15 +84,15 @@ const Home: React.FC = () => {
   const handleSubmit = async () => {
     setIsLoading(true);
     const formData = new FormData();
-    formData.append("templateImage", templateImage as File);
-    formData.append("guests", JSON.stringify(guests));
-    formData.append("font", fontFamily);
-    formData.append("fontSize", fontSize.toString() + "px");
-    formData.append("color", fontColor);
-    formData.append("letterSpacing", letterSpacing.toString() + "px");
+    formData.append('templateImage', templateImage as File);
+    formData.append('guests', JSON.stringify(guests));
+    formData.append('font', fontFamily);
+    formData.append('fontSize', fontSize.toString() + "px");
+    formData.append('color', fontColor);
+    formData.append('letterSpacing', letterSpacing.toString() + "px");
 
-    const response = await fetch("/api/invite", {
-      method: "POST",
+    const response = await fetch('/api/invite', {
+      method: 'POST',
       body: formData,
     });
 
@@ -102,17 +102,15 @@ const Home: React.FC = () => {
       const url = URL.createObjectURL(blob);
 
       // Trigger the download
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = "invitations.zip";
+      a.download = 'invitations.zip';
       a.click();
       URL.revokeObjectURL(url);
     } else {
       setIsLoading(false);
-      toast.error(
-        `Failed to generate invitations : ${!templateImage && "No template image "}${guests.length === 0 && "No guests"}`,
-      );
-      console.error("Failed to generate invitations");
+      toast.error(`Failed to generate invitations : ${!templateImage && "No template image "}${guests.length === 0 && "No guests"}`);
+      console.error('Failed to generate invitations');
     }
   };
 
@@ -137,12 +135,7 @@ const Home: React.FC = () => {
         <DragAndDrop onDrop={handleDrop} />
 
         {templatePreview && (
-          <Image
-            src={templatePreview}
-            alt="Template Preview"
-            width={200}
-            height={200}
-          />
+          <Image src={templatePreview} alt="Template Preview" width={200} height={200} />
         )}
 
         <div className="ml-2 flex flex-col">
@@ -187,32 +180,22 @@ const Home: React.FC = () => {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex flew-row justify-between items-center">
-              <Label htmlFor="fontFamily" className="font-bold">
-                Font Family
-              </Label>
+              <Label htmlFor="fontFamily" className="font-bold">Font Family</Label>
               <select
-                id="fontFamily"
-                value={fontFamily}
-                onChange={handleFontChange}
-                className={
-                  "border border-gray-300 rounded px-2 py-1 " + fontFamily
-                }
-              >
-                {fonts.map((font) => (
-                  <option
-                    key={font.name}
-                    value={font.className}
-                    className={font.className}
-                  >
-                    {font.name}
-                  </option>
-                ))}
-              </select>
+            id="fontFamily"
+            value={fontFamily}
+            onChange={handleFontChange}
+            className={"border border-gray-300 rounded px-2 py-1 " + fontFamily}
+          >
+            {fonts.map((font) => (
+              <option key={font.name} value={font.className} className={font.className}>
+                {font.name}
+              </option>
+            ))}
+          </select>
             </div>
-            <div className="flex flew-row justify-between items-center">
-              <Label htmlFor="fontSize" className="font-bold">
-                Font Size
-              </Label>
+            <div  className="flex flew-row justify-between items-center">
+              <Label htmlFor="fontSize" className="font-bold">Font Size</Label>
               <input
                 type="number"
                 id="fontSize"
@@ -224,21 +207,17 @@ const Home: React.FC = () => {
               />
             </div>
             <div className="flex flew-row justify-between items-center">
-              <Label htmlFor="letterSpacing" className="font-bold">
-                Letter Spacing
-              </Label>
-              <Input
-                type="number"
-                id="letterSpacing"
-                value={letterSpacing}
-                onChange={(e) => setLetterSpacing(parseInt(e.target.value))}
-                className="border border-gray-300 rounded px-2 py-1 w-32"
-              />
-            </div>
-            <div className="flex flew-row justify-between items-center">
-              <Label htmlFor="fontColor" className="font-bold">
-                Font Color
-              </Label>
+            <Label htmlFor="letterSpacing" className="font-bold">Letter Spacing</Label>
+            <Input
+              type="number"
+              id="letterSpacing"
+              value={letterSpacing}
+              onChange={(e) => setLetterSpacing(parseInt(e.target.value))}
+              className="border border-gray-300 rounded px-2 py-1 w-32"
+            />
+          </div>
+            <div  className="flex flew-row justify-between items-center">
+              <Label htmlFor="fontColor" className="font-bold">Font Color</Label>
               <Input
                 type="color"
                 id="fontColor"
@@ -254,8 +233,7 @@ const Home: React.FC = () => {
           className="bg-black text-white hover:bg-blue-900"
           onClick={handleSubmit}
         >
-          {isLoading ? "Generating..." : "Start creation"}{" "}
-          <Rocket size={16} className="ml-2" />
+          {isLoading ? "Generating..." : "Start creation"} <Rocket size={16} className="ml-2" />
         </Button>
       </div>
     </div>
