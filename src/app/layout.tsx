@@ -29,9 +29,7 @@ export default function RootLayout({
       <body
         className={`${monumentGroteskSans.variable} ${monumentGroteskMono.variable} antialiased`}
       >
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
