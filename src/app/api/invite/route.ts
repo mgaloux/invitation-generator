@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import JSZip from "jszip";
 import sharp from "sharp";
 import { registerFont, createCanvas, CanvasRenderingContext2D } from "canvas";
+import path from "path";
 
 // POST request handler
 export async function POST(request: Request) {
@@ -85,7 +86,7 @@ async function addGuestNameToImage(
 
   console.log(4)
 
-  registerFont("./public/fonts/MonumentGrotesk.ttf", {
+  registerFont(path.join(process.cwd(), 'public/fonts/MonumentGrotesk.ttf'), {
     family: "MonumentGrotesk",
   });
   console.log(5)
