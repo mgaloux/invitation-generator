@@ -12,8 +12,7 @@ import Image from "next/image";
 import imageCompression from 'browser-image-compression';
 
 const fonts = [
-  { name: "Monument Grotesk Mono", className: "font-mono" },
-  { name: "Monument Grotesk", className: "font-grotesk" }
+  { name: "Monument Grotesk", className: "grotesk-medium" }
 ];
 
 const Home: React.FC = () => {
@@ -21,11 +20,11 @@ const Home: React.FC = () => {
   const [templatePreview, setTemplatePreview] = useState<string | null>(null);
   const [newGuest, setNewGuest] = useState<string>("");
   const [guests, setGuests] = useState<string[]>([]);
-  const [fontSize, setFontSize] = useState<number>(48);
+  const [fontSize, setFontSize] = useState<number>(42);
   const [fontColor, setFontColor] = useState<string>("white");
-  const [fontFamily, setFontFamily] = useState<string>("Monument Grotesk Mono");
+  const [fontFamily, setFontFamily] = useState<string>("Monument Grotesk");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [letterSpacing, setLetterSpacing] = useState<number>(16);
+  const [letterSpacing, setLetterSpacing] = useState<number>(8);
 
   const handleNewGuestChange = (event: ChangeEvent<HTMLInputElement>) => {
     setNewGuest(event.target.value);

@@ -86,7 +86,7 @@ async function addGuestNameToImage(
 
   console.log(4)
 
-  registerFont(path.join(process.cwd(), 'public/fonts/MonumentGrotesk.ttf'), {
+  registerFont(path.join(process.cwd(), 'public/fonts/MonumentGroteskMedium.ttf'), {
     family: "MonumentGrotesk",
   });
   console.log(5)
