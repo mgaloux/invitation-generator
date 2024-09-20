@@ -51,7 +51,7 @@ async function addGuestNameToImage(imageBuffer: Buffer, guestName: string, font:
   // Set up text rendering with Sharp's overlayWith feature
   const svgText = `
     <svg width="${imageWidth}" height="${imageHeight}">
-      <text x="50%" y="50%" font-size="${fontSize}" fill="${color}" font-family="${font}" dy=".3em" text-anchor="middle" letter-spacing="${letterSpacing}">
+      <text x="50%" y="50%" font-size="${fontSize}" fill="${color}" dy=".3em" text-anchor="middle" letter-spacing="${letterSpacing}">
         ${guestName}
       </text>
     </svg>
