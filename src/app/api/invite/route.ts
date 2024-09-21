@@ -21,16 +21,11 @@ export async function POST(request: Request) {
     );
   }
 
-  console.log(1);
   const guests = JSON.parse(guestsString); // Parse the guests list
   const zip = new JSZip();
 
-  console.log(2);
-
   // Read the image file
   const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-
-  console.log(3);
 
   // For each guest, create an image with their name on it
   for (const guest of guests) {
@@ -84,12 +79,9 @@ async function addGuestNameToImage(
 ): Promise<Buffer> {
   // Register the custom font
 
-  console.log(4)
-
   registerFont(path.join(process.cwd(), 'public/fonts/MonumentGroteskMedium.ttf'), {
     family: "MonumentGrotesk",
   });
-  console.log(5)
 
   // Create a canvas with the same size as the image
   const { width, height } = await sharp(imageBuffer).metadata();
@@ -99,8 +91,6 @@ async function addGuestNameToImage(
   }
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
-
-  console.log(6)
 
   // Set the font, size, and color
   ctx.font = `${fontSize}px MonumentGrotesk`;
@@ -122,15 +112,11 @@ async function addGuestNameToImage(
     letterSpacing,
   );
 
-  console.log(7)
-
   // Convert the canvas to a buffer
   const canvasBuffer = canvas.toBuffer("image/png");
 
   // Use Sharp to overlay the canvas text buffer onto the original image
   const image = sharp(imageBuffer);
-
-  console.log(8)
 
   // Combine the original image and the canvas text
   return await image

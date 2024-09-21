@@ -54,11 +54,17 @@ const Home: React.FC = () => {
 
   const handleDrop = async (acceptedFiles: File[]) => {
     if (!acceptedFiles) {
-      toast.error("No file detected");
+      toast.error("No file detected", {
+        dismissible: true,
+      }
+      );
       return;
     }
     if (acceptedFiles.length > 1) {
-      toast.error("Please only send one file");
+      toast.error("Please only send one file", {
+        dismissible: true,
+      }
+      );
       return;
     }
 
@@ -75,12 +81,21 @@ const Home: React.FC = () => {
     setTemplatePreview(fileURL);
 
     if (!file) {
-      toast("Please upload a file");
+      toast("Please upload a file", {
+        dismissible: true,
+      });
       return;
     }
   };
 
   const handleSubmit = async () => {
+    if (!templateImage || guests.length === 0) {
+      toast.error(`Failed to generate invitations : ${!templateImage ? "No template image " : ""} ${guests.length === 0 && "No guests"}`, {
+        dismissible: true,
+      });
+      return;
+    }
+
     setIsLoading(true);
     const formData = new FormData();
     formData.append('templateImage', templateImage as File);
@@ -108,7 +123,10 @@ const Home: React.FC = () => {
       URL.revokeObjectURL(url);
     } else {
       setIsLoading(false);
-      toast.error(`Failed to generate invitations : ${!templateImage && "No template image "}${guests.length === 0 && "No guests"}`);
+      toast.error(`Failed to generate invitations : ${!templateImage && "No template image "}${guests.length === 0 && "No guests"}`, {
+        dismissible: true,
+      }
+      );
       console.error('Failed to generate invitations');
     }
   };
@@ -118,7 +136,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="my-8 mx-auto sm:w-[80vw] lg:w-[50vw]">
+    <div className="my-4 mx-auto px-4 sm:w-[80vw] lg:w-[50vw]">
       <Toaster />
       <h1 className="text-2xl mb-4 font-bold">
         Balcony Event Invitation Generator
