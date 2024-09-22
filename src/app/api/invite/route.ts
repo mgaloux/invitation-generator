@@ -4,6 +4,18 @@ import sharp from "sharp";
 import { registerFont, createCanvas, CanvasRenderingContext2D } from "canvas";
 import path from "path";
 
+// Cache font registration to avoid re-registering
+let fontRegistered = false;
+
+function registerCustomFont() {
+  if (!fontRegistered) {
+    registerFont(path.join(process.cwd(), 'public/fonts/MonumentGroteskMedium.ttf'), {
+      family: "MonumentGrotesk",
+    });
+    fontRegistered = true;
+  }
+}
+
 // POST request handler
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -12,33 +24,38 @@ export async function POST(request: Request) {
   const font = formData.get("font") as string;
   const fontSize = formData.get("fontSize") as string;
   const color = formData.get("color") as string;
-  const letterSpacing = formData.get("letterSpacing") as string; // New parameter for letter spacing
+  const letterSpacing = formData.get("letterSpacing") as string;
 
   if (!imageFile || !guestsString) {
     return NextResponse.json(
       { error: "Missing image or guests" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   const guests = JSON.parse(guestsString); // Parse the guests list
-  const zip = new JSZip();
 
   // Read the image file
   const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
 
-  // For each guest, create an image with their name on it
-  for (const guest of guests) {
+  // For multiple guests, generate a ZIP file
+  const zip = new JSZip();
+
+  // Process each guest concurrently using Promise.all for parallel processing
+  const guestPromises = guests.map(async (guest: string) => {
     const guestImageBuffer = await addGuestNameToImage(
       imageBuffer,
       guest,
       font,
       parseInt(fontSize),
       color,
-      parseInt(letterSpacing),
+      parseInt(letterSpacing)
     );
     zip.file(`${guest}.png`, guestImageBuffer); // Add the modified image to the ZIP
-  }
+  });
+
+  // Wait for all image generation to finish
+  await Promise.all(guestPromises);
 
   // Generate the ZIP file
   const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
@@ -57,10 +74,9 @@ function drawTextWithLetterSpacing(
   text: string,
   x: number,
   y: number,
-  letterSpacing: number = 0,
+  letterSpacing: number = 0
 ) {
   let currentX = x;
-
   // Loop over each character and draw it with the spacing
   for (const char of text) {
     ctx.fillText(char, currentX, y);
@@ -75,13 +91,10 @@ async function addGuestNameToImage(
   fontPath: string,
   fontSize: number,
   color: string,
-  letterSpacing: number,
+  letterSpacing: number
 ): Promise<Buffer> {
-  // Register the custom font
-
-  registerFont(path.join(process.cwd(), 'public/fonts/MonumentGroteskMedium.ttf'), {
-    family: "MonumentGrotesk",
-  });
+  // Register the custom font once
+  registerCustomFont();
 
   // Create a canvas with the same size as the image
   const { width, height } = await sharp(imageBuffer).metadata();
@@ -109,7 +122,7 @@ async function addGuestNameToImage(
     guestName,
     xPosition,
     yPosition,
-    letterSpacing,
+    letterSpacing
   );
 
   // Convert the canvas to a buffer
