@@ -54,81 +54,65 @@ const Home: React.FC = () => {
 
   const handleDrop = async (acceptedFiles: File[]) => {
     if (!acceptedFiles) {
-      toast.error("No file detected", {
-        dismissible: true,
-      }
-      );
+      toast.error("No file detected", { dismissible: true });
       return;
     }
     if (acceptedFiles.length > 1) {
-      toast.error("Please only send one file", {
-        dismissible: true,
-      }
-      );
+      toast.error("Please only send one file", { dismissible: true });
       return;
     }
 
     const options = {
-      maxSizeMB: 4, // Set to 1MB
-      maxWidthOrHeight: 1920, // Set to resize large images
+      maxSizeMB: 4,
+      maxWidthOrHeight: 1920,
       useWebWorker: true,
     };
 
     const file = await imageCompression(acceptedFiles[0], options);
-
     setTemplateImage(file);
     const fileURL = URL.createObjectURL(file);
     setTemplatePreview(fileURL);
-
-    if (!file) {
-      toast("Please upload a file", {
-        dismissible: true,
-      });
-      return;
-    }
   };
 
   const handleSubmit = async () => {
     if (!templateImage || guests.length === 0) {
-      toast.error(`Failed to generate invitations : ${!templateImage ? "No template image " : ""} ${guests.length === 0 && "No guests"}`, {
-        dismissible: true,
-      });
+      toast.error(`Failed to generate invitations : ${!templateImage ? "No template image " : ""} ${guests.length === 0 && "No guests"}`, { dismissible: true });
       return;
     }
 
     setIsLoading(true);
-    const formData = new FormData();
-    formData.append('templateImage', templateImage as File);
-    formData.append('guests', JSON.stringify(guests));
-    formData.append('font', fontFamily);
-    formData.append('fontSize', fontSize.toString() + "px");
-    formData.append('color', fontColor);
-    formData.append('letterSpacing', letterSpacing.toString() + "px");
 
-    const response = await fetch('/api/invite', {
-      method: 'POST',
-      body: formData,
-    });
+    for (const guest of guests) {
+      const formData = new FormData();
+      formData.append('templateImage', templateImage as File);
+      formData.append('guestName', guest);
+      formData.append('font', fontFamily);
+      formData.append('fontSize', fontSize.toString());
+      formData.append('color', fontColor);
+      formData.append('letterSpacing', letterSpacing.toString());
 
-    if (response.ok) {
-      const blob = await response.blob();
-      setIsLoading(false);
-      const url = URL.createObjectURL(blob);
+      const response = await fetch('/api/invite', {
+        method: 'POST',
+        body: formData,
+      });
 
-      // Trigger the download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'invitations.zip';
-      a.click();
-      URL.revokeObjectURL(url);
-    } else {
-      setIsLoading(false);
-      toast.error(`Failed to generate invitations : ${!templateImage && "No template image "}${guests.length === 0 && "No guests"}`, {
-        dismissible: true,
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        
+        // Trigger the download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${guest}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        toast.error(`Failed to generate invitation for ${guest}`);
+        console.error('Failed to generate invitation:', guest);
       }
-      );
-      console.error('Failed to generate invitations');
     }
+
+    setIsLoading(false);
   };
 
   const handleFontChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -145,7 +129,7 @@ const Home: React.FC = () => {
         <div className="ml-2 flex flex-col">
           <Label className="font-bold">Template Image</Label>
           <Label className="text-xs font-normal text-muted-foreground">
-            Until 100Mo. PNG Only.
+            Until 4MB. PNG Only.
           </Label>
         </div>
 
@@ -199,19 +183,19 @@ const Home: React.FC = () => {
             <div className="flex flew-row justify-between items-center">
               <Label htmlFor="fontFamily" className="font-bold">Font Family</Label>
               <select
-            id="fontFamily"
-            value={fontFamily}
-            onChange={handleFontChange}
-            className={"border border-gray-300 rounded px-2 py-1 " + fontFamily}
-          >
-            {fonts.map((font) => (
-              <option key={font.name} value={font.className} className={font.className}>
-                {font.name}
-              </option>
-            ))}
-          </select>
+                id="fontFamily"
+                value={fontFamily}
+                onChange={handleFontChange}
+                className={"border border-gray-300 rounded px-2 py-1 " + fontFamily}
+              >
+                {fonts.map((font) => (
+                  <option key={font.name} value={font.className} className={font.className}>
+                    {font.name}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div  className="flex flew-row justify-between items-center">
+            <div className="flex flew-row justify-between items-center">
               <Label htmlFor="fontSize" className="font-bold">Font Size</Label>
               <input
                 type="number"
@@ -224,16 +208,16 @@ const Home: React.FC = () => {
               />
             </div>
             <div className="flex flew-row justify-between items-center">
-            <Label htmlFor="letterSpacing" className="font-bold">Letter Spacing</Label>
-            <Input
-              type="number"
-              id="letterSpacing"
-              value={letterSpacing}
-              onChange={(e) => setLetterSpacing(parseInt(e.target.value))}
-              className="border border-gray-300 rounded px-2 py-1 w-32"
-            />
-          </div>
-            <div  className="flex flew-row justify-between items-center">
+              <Label htmlFor="letterSpacing" className="font-bold">Letter Spacing</Label>
+              <Input
+                type="number"
+                id="letterSpacing"
+                value={letterSpacing}
+                onChange={(e) => setLetterSpacing(parseInt(e.target.value))}
+                className="border border-gray-300 rounded px-2 py-1 w-32"
+              />
+            </div>
+            <div className="flex flew-row justify-between items-center">
               <Label htmlFor="fontColor" className="font-bold">Font Color</Label>
               <Input
                 type="color"
