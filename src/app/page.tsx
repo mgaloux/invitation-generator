@@ -156,7 +156,6 @@ const Home: React.FC = () => {
             value={newGuest}
           />
           <Button
-            disabled={guests.length > 4}
             className="p-0 w-8 bg-black text-white hover:bg-blue-900"
             onClick={handleAddGuest}
           >
