@@ -1,15 +1,24 @@
 "use client";
 
-import { useState, ChangeEvent, KeyboardEvent } from "react";
-import { Plus, Rocket, X } from "lucide-react";
+import { useState, useEffect, ChangeEvent, KeyboardEvent, useRef } from "react";
+import { ChevronsRight, Plus, Rocket, Upload, X } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import DragAndDrop from "./DragAndDrop";
 import Image from "next/image";
 import imageCompression from 'browser-image-compression';
+import { debounce } from "lodash";
+
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const fonts = [
   { name: "Monument Grotesk", className: "grotesk-medium" }
@@ -17,14 +26,102 @@ const fonts = [
 
 const Home: React.FC = () => {
   const [templateImage, setTemplateImage] = useState<File | null>(null);
-  const [templatePreview, setTemplatePreview] = useState<string | null>(null);
+  const [templatePreview, setTemplatePreview] = useState<string>("/templates/CCW02 NIGHT PARTY.png");
+  const [resultPreview, setResultPreview] = useState<string>("/templates/CCW02 NIGHT PARTY.png");
   const [newGuest, setNewGuest] = useState<string>("");
   const [guests, setGuests] = useState<string[]>([]);
   const [fontSize, setFontSize] = useState<number>(42);
   const [fontColor, setFontColor] = useState<string>("white");
   const [fontFamily, setFontFamily] = useState<string>("Monument Grotesk");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isTemplateUploading, setIsTemplateUploading] = useState<boolean>(false);
   const [letterSpacing, setLetterSpacing] = useState<number>(8);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePreviewGeneration = async () => {
+    const formData = new FormData();
+    formData.append("guestName", "GUEST");
+    formData.append("fontSize", fontSize.toString());
+    formData.append("color", fontColor);
+    formData.append("letterSpacing", letterSpacing.toString());
+    formData.append("fontFamily", "MonumentGroteskMedium");
+    formData.append("templateImagePath", templatePreview);
+    if (templateImage) formData.append("templateImage", templateImage);
+  
+    const response = await fetch("/api/preview", {
+      method: "POST",
+      body: formData,
+    });
+  
+    const data = await response.json();
+    setResultPreview(data.imageUrl);
+  };
+
+  useEffect(() => {
+    const debouncedGeneratePreview = debounce(() => {
+      handlePreviewGeneration();
+    }, 500); 
+  
+    debouncedGeneratePreview();
+
+    return () => {
+      debouncedGeneratePreview.cancel();
+    };
+  }, [fontColor, fontFamily, fontSize, letterSpacing, templatePreview, templateImage]);
+
+  const handleTemplateUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setIsTemplateUploading(true);
+    const acceptedFiles = event.target.files;
+  
+    if (!acceptedFiles) {
+      setIsTemplateUploading(false);
+      toast.error("No file detected", { dismissible: true });
+      return;
+    }
+    if (acceptedFiles.length > 1) {
+      setIsTemplateUploading(false);
+      toast.error("Please only send one file", { dismissible: true });
+      return;
+    }
+  
+    const file = acceptedFiles[0];
+  
+    // If the file is less than 4MB, skip the compression step
+    if (file.size / 1024 / 1024 < 4) {
+      setTemplateImage(file);
+      const fileURL = URL.createObjectURL(file);
+      setTemplatePreview(fileURL);
+      setIsTemplateUploading(false);
+      return;
+    }
+  
+    // For files larger than 4MB, apply compression
+    const options = {
+      maxSizeMB: 4,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+    };
+  
+    try {
+      const compressedFile = await imageCompression(file, options);
+      setTemplateImage(compressedFile);
+      const fileURL = URL.createObjectURL(compressedFile);
+      setTemplatePreview(fileURL);
+    } catch (error) {
+      toast.error("Error during image compression", { dismissible: true });
+    }
+  
+    setIsTemplateUploading(false);
+  };
+  
+
+  const handleButtonClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
 
   const handleNewGuestChange = (event: ChangeEvent<HTMLInputElement>) => {
     setNewGuest(event.target.value);
@@ -52,66 +149,51 @@ const Home: React.FC = () => {
     }
   };
 
-  const handleDrop = async (acceptedFiles: File[]) => {
-    if (!acceptedFiles) {
-      toast.error("No file detected", { dismissible: true });
-      return;
-    }
-    if (acceptedFiles.length > 1) {
-      toast.error("Please only send one file", { dismissible: true });
-      return;
-    }
-
-    const options = {
-      maxSizeMB: 4,
-      maxWidthOrHeight: 1920,
-      useWebWorker: true,
-    };
-
-    const file = await imageCompression(acceptedFiles[0], options);
-    setTemplateImage(file);
-    const fileURL = URL.createObjectURL(file);
-    setTemplatePreview(fileURL);
-  };
-
   const handleSubmit = async () => {
-    if (!templateImage || guests.length === 0) {
-      toast.error(`Failed to generate invitations : ${!templateImage ? "No template image " : ""} ${guests.length === 0 && "No guests"}`, { dismissible: true });
+    if (!templatePreview || guests.length === 0) {
+      toast.error(
+        `Failed to generate invitations: ${!templatePreview ? "No template image " : ""} ${guests.length === 0 && "No guests"}`,
+        { dismissible: true }
+      );
       return;
     }
-
+  
     setIsLoading(true);
-
+  
     for (const guest of guests) {
       const formData = new FormData();
-      formData.append('templateImage', templateImage as File);
-      formData.append('guestName', guest);
-      formData.append('font', fontFamily);
-      formData.append('fontSize', fontSize.toString());
-      formData.append('color', fontColor);
-      formData.append('letterSpacing', letterSpacing.toString());
-
-      const response = await fetch('/api/invite', {
-        method: 'POST',
+      if (templateImage) {
+        formData.append("templateImage", templateImage as File);
+      } else {
+        formData.append("templateImagePath", templatePreview);  // Adjust your backend to handle this
+      }
+  
+      formData.append("guestName", guest);
+      formData.append("font", fontFamily);
+      formData.append("fontSize", fontSize.toString());
+      formData.append("color", fontColor);
+      formData.append("letterSpacing", letterSpacing.toString());
+  
+      const response = await fetch("/api/invite", {
+        method: "POST",
         body: formData,
       });
-
+  
       if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        
-        // Trigger the download
-        const a = document.createElement('a');
+  
+        const a = document.createElement("a");
         a.href = url;
         a.download = `${guest}.png`;
         a.click();
         URL.revokeObjectURL(url);
       } else {
         toast.error(`Failed to generate invitation for ${guest}`);
-        console.error('Failed to generate invitation:', guest);
+        console.error("Failed to generate invitation:", guest);
       }
     }
-
+  
     setIsLoading(false);
   };
 
@@ -127,17 +209,78 @@ const Home: React.FC = () => {
       </h1>
       <div className="flex flex-col gap-4">
         <div className="ml-2 flex flex-col">
-          <Label className="font-bold">Template Image</Label>
+          <Label className="font-bold">Select Template Image</Label>
           <Label className="text-xs font-normal text-muted-foreground">
             Until 4MB. PNG Only.
           </Label>
         </div>
 
-        <DragAndDrop onDrop={handleDrop} />
+        <div className="flex items-center gap-2">
+          <Select
+            defaultValue="/templates/CCW02 NIGHT PARTY.png"
+            onValueChange={(e) => {
+              setTemplatePreview(e)
+              setTemplateImage(null); 
+              }
+            }
+          >
+            <SelectTrigger className="w-[250px]">
+              <SelectValue placeholder="Select a template" />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectGroup>
+                <SelectItem value="/templates/CCW02 DAY POPUP.png">
+                  CCW02 DAY POPUP
+                </SelectItem>
+                <SelectItem value="/templates/CCW02 NIGHT PARTY.png">
+                  CCW02 NIGHT PARTY
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <p>or</p>
 
-        {templatePreview && (
-          <Image src={templatePreview} alt="Template Preview" width={200} height={200} />
-        )}
+          <div>
+            <Button
+              className="bg-black text-white hover:bg-blue-900"
+              onClick={handleButtonClick}
+            >
+              {isTemplateUploading ? <>Uploading file...</> : <>Upload <Upload size={16} className="ml-2" /></>}{" "}
+              
+            </Button>
+            <input
+              type="file"
+              onChange={handleTemplateUpload}
+              className="hidden"
+              ref={fileInputRef}
+              accept="image/png" // Add any accepted file types
+            />
+          </div>
+        </div>
+        <div className="flex gap-2 items-center justify-start">
+          <div className="flex flex-col items-center gap-2">
+          <Label className="font-bold ml-2">Template</Label>
+          
+          <Image
+            src={templatePreview}
+            alt="Template Preview"
+            height={100}
+            width={200}
+          />
+          </div>
+          <ChevronsRight size={32} className="text-black mx-auto" />
+          <div  className="flex flex-col items-center gap-2">
+          <Label className="font-bold ml-2">Result preview</Label>
+          
+          <Image
+            src={resultPreview}
+            alt="Template Preview"
+            height={100}
+            width={200}
+          />
+          </div>
+        </div>
+        
 
         <div className="ml-2 flex flex-col">
           <Label className="font-bold">Guests</Label>
@@ -180,22 +323,32 @@ const Home: React.FC = () => {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex flew-row justify-between items-center">
-              <Label htmlFor="fontFamily" className="font-bold">Font Family</Label>
+              <Label htmlFor="fontFamily" className="font-bold">
+                Font Family
+              </Label>
               <select
                 id="fontFamily"
                 value={fontFamily}
                 onChange={handleFontChange}
-                className={"border border-gray-300 rounded px-2 py-1 " + fontFamily}
+                className={
+                  "border border-gray-300 rounded px-2 py-1 " + fontFamily
+                }
               >
                 {fonts.map((font) => (
-                  <option key={font.name} value={font.className} className={font.className}>
+                  <option
+                    key={font.name}
+                    value={font.className}
+                    className={font.className}
+                  >
                     {font.name}
                   </option>
                 ))}
               </select>
             </div>
             <div className="flex flew-row justify-between items-center">
-              <Label htmlFor="fontSize" className="font-bold">Font Size</Label>
+              <Label htmlFor="fontSize" className="font-bold">
+                Font Size
+              </Label>
               <input
                 type="number"
                 id="fontSize"
@@ -207,7 +360,9 @@ const Home: React.FC = () => {
               />
             </div>
             <div className="flex flew-row justify-between items-center">
-              <Label htmlFor="letterSpacing" className="font-bold">Letter Spacing</Label>
+              <Label htmlFor="letterSpacing" className="font-bold">
+                Letter Spacing
+              </Label>
               <Input
                 type="number"
                 id="letterSpacing"
@@ -217,7 +372,9 @@ const Home: React.FC = () => {
               />
             </div>
             <div className="flex flew-row justify-between items-center">
-              <Label htmlFor="fontColor" className="font-bold">Font Color</Label>
+              <Label htmlFor="fontColor" className="font-bold">
+                Font Color
+              </Label>
               <Input
                 type="color"
                 id="fontColor"
@@ -233,7 +390,8 @@ const Home: React.FC = () => {
           className="bg-black text-white hover:bg-blue-900"
           onClick={handleSubmit}
         >
-          {isLoading ? "Generating..." : "Start creation"} <Rocket size={16} className="ml-2" />
+          {isLoading ? "Generating..." : "Start creation"}{" "}
+          <Rocket size={16} className="ml-2" />
         </Button>
       </div>
     </div>

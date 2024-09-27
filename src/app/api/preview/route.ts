@@ -7,27 +7,24 @@ import fs from "fs";
 // Cache font registration to avoid re-registering
 let fontRegistered = false;
 
-function registerCustomFont() {
+function registerCustomFont(fontPath: string, fontFamily: string) {
   if (!fontRegistered) {
-    registerFont(
-      path.join(process.cwd(), "public/fonts/MonumentGroteskMedium.ttf"),
-      {
-        family: "Monument Grotesk", // Ensure this is the correct family name from the font file
-      }
-    );
+    registerFont(fontPath, { family: fontFamily });
     fontRegistered = true;
-    console.log("Font registered: Monument Grotesk");
+    console.log(`Font registered: ${fontFamily}`);
   }
 }
 
-// POST request handler
+// POST request handler for preview image
 export async function POST(request: Request) {
+  console.log("POST /api/preview");
   const formData = await request.formData();
 
   const guestName = formData.get("guestName") as string;
   const fontSize = formData.get("fontSize") as string;
   const color = formData.get("color") as string;
   const letterSpacing = formData.get("letterSpacing") as string;
+  const fontFamily = formData.get("fontFamily") as string;
 
   // Check if the template is provided as a file or a file path
   const imageFile = formData.get("templateImage") as File | null;
@@ -62,26 +59,27 @@ export async function POST(request: Request) {
   }
 
   // Register the custom font before processing the image
-  registerCustomFont();
+  const fontPath = path.join(process.cwd(), `public/fonts/${fontFamily}.ttf`);
+  registerCustomFont(fontPath, fontFamily);
 
   const guestImageBuffer = await addGuestNameToImage(
     imageBuffer!,
     guestName,
     parseInt(fontSize),
     color,
-    parseInt(letterSpacing)
+    parseInt(letterSpacing),
+    fontFamily
   );
 
-  return new Response(guestImageBuffer, {
-    headers: {
-      "Content-Type": "image/png",
-      "Content-Disposition": `attachment; filename="${guestName}.png"`,
-    },
-  });
+  // Convert image buffer to base64 URL format for the preview
+  const imageBase64 = guestImageBuffer.toString("base64");
+  const imageUrl = `data:image/png;base64,${imageBase64}`;
+
+  return NextResponse.json({ imageUrl });
 }
 
 // Function to draw text with custom letter spacing
-export function drawTextWithLetterSpacing(
+function drawTextWithLetterSpacing(
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
@@ -101,7 +99,8 @@ async function addGuestNameToImage(
   guestName: string,
   fontSize: number,
   color: string,
-  letterSpacing: number
+  letterSpacing: number,
+  fontFamily: string
 ): Promise<Buffer> {
   const { width, height } = await sharp(imageBuffer).metadata();
   if (!width || !height) {
@@ -112,7 +111,7 @@ async function addGuestNameToImage(
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
-  ctx.font = `${fontSize}px "Monument Grotesk", Sans`; // Use the registered font with a fallback
+  ctx.font = `${fontSize}px "${fontFamily}", Sans`; // Use the registered font with a fallback
   ctx.fillStyle = color;
 
   const textWidth = ctx.measureText(guestName).width + (guestName.length - 1) * letterSpacing;
