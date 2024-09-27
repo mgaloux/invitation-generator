@@ -81,7 +81,7 @@ export async function POST(request: Request) {
 }
 
 // Function to draw text with custom letter spacing
-export function drawTextWithLetterSpacing(
+function drawTextWithLetterSpacing(
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
