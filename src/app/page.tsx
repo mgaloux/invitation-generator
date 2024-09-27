@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import imageCompression from 'browser-image-compression';
-import { debounce } from "lodash";
+import imageCompression from "browser-image-compression";
+import { debounce, set } from "lodash";
 
 import {
   Select,
@@ -19,24 +19,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const fonts = [
-  { name: "Monument Grotesk", className: "grotesk-medium" }
-];
+const fonts = [{ name: "Monument Grotesk", className: "grotesk-medium" }];
 
 const Home: React.FC = () => {
   const [templateImage, setTemplateImage] = useState<File | null>(null);
-  const [templatePreview, setTemplatePreview] = useState<string>("/templates/CCW02 NIGHT PARTY.png");
-  const [resultPreview, setResultPreview] = useState<string>("/templates/CCW02 NIGHT PARTY.png");
+  const [templatePreview, setTemplatePreview] = useState<string>(
+    "/templates/CCW02 NIGHT PARTY.png",
+  );
+  const [resultPreview, setResultPreview] = useState<string>(
+    "/templates/CCW02 NIGHT PARTY.png",
+  );
   const [newGuest, setNewGuest] = useState<string>("");
   const [guests, setGuests] = useState<string[]>([]);
   const [fontSize, setFontSize] = useState<number>(42);
-  const [fontColor, setFontColor] = useState<string>("white");
+  const [fontColor, setFontColor] = useState<string>("#ffffff");
   const [fontFamily, setFontFamily] = useState<string>("Monument Grotesk");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isTemplateUploading, setIsTemplateUploading] = useState<boolean>(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
+  const [isTemplateUploading, setIsTemplateUploading] =
+    useState<boolean>(false);
+  const [isGuestListUploading, setIsGuestListUploading] =
+    useState<boolean>(false);
   const [letterSpacing, setLetterSpacing] = useState<number>(8);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
   const handlePreviewGeneration = async () => {
     const formData = new FormData();
@@ -47,34 +55,91 @@ const Home: React.FC = () => {
     formData.append("fontFamily", "MonumentGroteskMedium");
     formData.append("templateImagePath", templatePreview);
     if (templateImage) formData.append("templateImage", templateImage);
-  
+
     const response = await fetch("/api/preview", {
       method: "POST",
       body: formData,
     });
-  
+
     const data = await response.json();
     setResultPreview(data.imageUrl);
   };
 
   useEffect(() => {
-    const debouncedGeneratePreview = debounce(() => {
-      handlePreviewGeneration();
-    }, 500); 
-  
+    const debouncedGeneratePreview = debounce(async () => {
+      setIsPreviewLoading(true);
+      await handlePreviewGeneration();
+      setIsPreviewLoading(false);
+    }, 500);
+
     debouncedGeneratePreview();
 
     return () => {
       debouncedGeneratePreview.cancel();
     };
-  }, [fontColor, fontFamily, fontSize, letterSpacing, templatePreview, templateImage]);
+  }, [
+    fontColor,
+    fontFamily,
+    fontSize,
+    letterSpacing,
+    templatePreview,
+    templateImage,
+  ]);
+
+  useEffect(() => {
+    console.log("isPreviewLoading", isPreviewLoading);
+  }, [isPreviewLoading]);
+
+  const handleGuestListUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setIsGuestListUploading(true);
+    const acceptedFiles = event.target.files;
+
+    if (!acceptedFiles) {
+      setIsGuestListUploading(false);
+      toast.error("No file detected", { dismissible: true });
+      return;
+    }
+    if (acceptedFiles.length > 1) {
+      setIsGuestListUploading(false);
+      toast.error("Please only send one file", { dismissible: true });
+      return;
+    }
+
+    const file = acceptedFiles[0];
+
+    // If the file is less than 4MB, skip the compression step
+    if (file.size / 1024 / 1024 > 4) {
+      setIsGuestListUploading(false);
+      toast.error("File over size limit (4MB)", { dismissible: true });
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("csvFile", file);
+
+      const response = await fetch("/api/parseGuests", {
+        method: "POST",
+        body: formData,
+      });
+
+      const newGuests = await response.json();
+      setGuests((prevGuests) => [...prevGuests, ...newGuests.guests]);
+    } catch (error) {
+      toast.error("Error during csv import", { dismissible: true });
+    }
+
+    setIsGuestListUploading(false);
+  };
 
   const handleTemplateUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setIsTemplateUploading(true);
     const acceptedFiles = event.target.files;
-  
+
     if (!acceptedFiles) {
       setIsTemplateUploading(false);
       toast.error("No file detected", { dismissible: true });
@@ -85,9 +150,9 @@ const Home: React.FC = () => {
       toast.error("Please only send one file", { dismissible: true });
       return;
     }
-  
+
     const file = acceptedFiles[0];
-  
+
     // If the file is less than 4MB, skip the compression step
     if (file.size / 1024 / 1024 < 4) {
       setTemplateImage(file);
@@ -96,14 +161,14 @@ const Home: React.FC = () => {
       setIsTemplateUploading(false);
       return;
     }
-  
+
     // For files larger than 4MB, apply compression
     const options = {
       maxSizeMB: 4,
       maxWidthOrHeight: 1920,
       useWebWorker: true,
     };
-  
+
     try {
       const compressedFile = await imageCompression(file, options);
       setTemplateImage(compressedFile);
@@ -112,14 +177,19 @@ const Home: React.FC = () => {
     } catch (error) {
       toast.error("Error during image compression", { dismissible: true });
     }
-  
+
     setIsTemplateUploading(false);
   };
-  
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  const handleCSVButtonClick = () => {
+    if (csvInputRef.current) {
+      csvInputRef.current.click();
     }
   };
 
@@ -153,36 +223,36 @@ const Home: React.FC = () => {
     if (!templatePreview || guests.length === 0) {
       toast.error(
         `Failed to generate invitations: ${!templatePreview ? "No template image " : ""} ${guests.length === 0 && "No guests"}`,
-        { dismissible: true }
+        { dismissible: true },
       );
       return;
     }
-  
+
     setIsLoading(true);
-  
+
     for (const guest of guests) {
       const formData = new FormData();
       if (templateImage) {
         formData.append("templateImage", templateImage as File);
       } else {
-        formData.append("templateImagePath", templatePreview);  // Adjust your backend to handle this
+        formData.append("templateImagePath", templatePreview); // Adjust your backend to handle this
       }
-  
+
       formData.append("guestName", guest);
       formData.append("font", fontFamily);
       formData.append("fontSize", fontSize.toString());
       formData.append("color", fontColor);
       formData.append("letterSpacing", letterSpacing.toString());
-  
+
       const response = await fetch("/api/invite", {
         method: "POST",
         body: formData,
       });
-  
+
       if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-  
+
         const a = document.createElement("a");
         a.href = url;
         a.download = `${guest}.png`;
@@ -193,7 +263,7 @@ const Home: React.FC = () => {
         console.error("Failed to generate invitation:", guest);
       }
     }
-  
+
     setIsLoading(false);
   };
 
@@ -219,10 +289,9 @@ const Home: React.FC = () => {
           <Select
             defaultValue="/templates/CCW02 NIGHT PARTY.png"
             onValueChange={(e) => {
-              setTemplatePreview(e)
-              setTemplateImage(null); 
-              }
-            }
+              setTemplatePreview(e);
+              setTemplateImage(null);
+            }}
           >
             <SelectTrigger className="w-[250px]">
               <SelectValue placeholder="Select a template" />
@@ -245,8 +314,13 @@ const Home: React.FC = () => {
               className="bg-black text-white hover:bg-blue-900"
               onClick={handleButtonClick}
             >
-              {isTemplateUploading ? <>Uploading file...</> : <>Upload <Upload size={16} className="ml-2" /></>}{" "}
-              
+              {isTemplateUploading ? (
+                <>Uploading file...</>
+              ) : (
+                <>
+                  Upload <Upload size={16} className="ml-2" />
+                </>
+              )}{" "}
             </Button>
             <input
               type="file"
@@ -259,51 +333,79 @@ const Home: React.FC = () => {
         </div>
         <div className="flex gap-2 items-center justify-start">
           <div className="flex flex-col items-center gap-2">
-          <Label className="font-bold ml-2">Template</Label>
-          
-          <Image
-            src={templatePreview}
-            alt="Template Preview"
-            height={100}
-            width={200}
-          />
+            <Label className="font-bold ml-2">Template</Label>
+
+            <Image
+              src={templatePreview}
+              alt="Template Preview"
+              height={100}
+              width={200}
+            />
           </div>
           <ChevronsRight size={32} className="text-black mx-auto" />
-          <div  className="flex flex-col items-center gap-2">
-          <Label className="font-bold ml-2">Result preview</Label>
-          
-          <Image
-            src={resultPreview}
-            alt="Template Preview"
-            height={100}
-            width={200}
-          />
+          <div className="flex flex-col items-center gap-2">
+            <Label className="font-bold ml-2">Result preview</Label>
+
+            {isPreviewLoading ? (
+              <div className="h-[350px] w-[200px] bg-gray-100 border border-dashed border-gray-400 flex items-center">
+                <p className="mx-auto">Generating...</p>
+              </div>
+            ) : (
+              <Image
+                src={resultPreview}
+                alt="Template Preview"
+                height={100}
+                width={200}
+              />
+            )}
           </div>
         </div>
-        
 
         <div className="ml-2 flex flex-col">
           <Label className="font-bold">Guests</Label>
           <Label className="text-xs font-normal text-muted-foreground">
             Tap enter or the + button to add.
           </Label>
-        </div>
 
-        <div className="flex gap-2">
-          <Input
-            id="new-Guest"
-            onChange={handleNewGuestChange}
-            onKeyDown={handleKeyDown}
-            placeholder={"New Guest..."}
-            className="text-muted-foreground"
-            value={newGuest}
-          />
-          <Button
-            className="p-0 w-8 bg-black text-white hover:bg-blue-900"
-            onClick={handleAddGuest}
-          >
-            <Plus size={16} />
-          </Button>
+          <div className="flex gap-2 mt-2 items-center">
+            <Input
+              id="new-Guest"
+              onChange={handleNewGuestChange}
+              onKeyDown={handleKeyDown}
+              placeholder={"New Guest..."}
+              className="text-muted-foreground w-64"
+              value={newGuest}
+            />
+            <Button
+              className="p-0 w-8 bg-black text-white hover:bg-blue-900"
+              onClick={handleAddGuest}
+            >
+              <Plus size={16} />
+            </Button>
+            <p>or</p>
+            <div>
+              <Button
+                className="bg-black text-white hover:bg-blue-900"
+                onClick={handleCSVButtonClick}
+              >
+                {isGuestListUploading ? (
+                  <>Uploading guest list...</>
+                ) : (
+                  <>
+                    Import Guest List from CSV{" "}
+                    <Upload size={16} className="ml-2" />
+                  </>
+                )}{" "}
+              </Button>
+              <input
+                type="file"
+                onChange={handleGuestListUpload}
+                className="hidden"
+                ref={csvInputRef}
+                accept="text/csv" // Add any accepted file types
+              />
+            </div>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1 gap-y-3">
           {guests.map((Guest, index) => (

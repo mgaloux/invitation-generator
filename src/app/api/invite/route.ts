@@ -13,7 +13,7 @@ function registerCustomFont() {
       path.join(process.cwd(), "public/fonts/MonumentGroteskMedium.ttf"),
       {
         family: "Monument Grotesk", // Ensure this is the correct family name from the font file
-      }
+      },
     );
     fontRegistered = true;
     console.log("Font registered: Monument Grotesk");
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   if (!imageFile && !templateImagePath) {
     return NextResponse.json(
       { error: "Missing image or image path" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -48,13 +48,17 @@ export async function POST(request: Request) {
     imageBuffer = Buffer.from(await imageFile.arrayBuffer());
   } else if (templateImagePath) {
     // Handle image path from server (e.g., static files)
-    const templateFullPath = path.join(process.cwd(), "public", templateImagePath);
+    const templateFullPath = path.join(
+      process.cwd(),
+      "public",
+      templateImagePath,
+    );
 
     // Check if the file exists before reading it
     if (!fs.existsSync(templateFullPath)) {
       return NextResponse.json(
         { error: "Template image not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -69,7 +73,7 @@ export async function POST(request: Request) {
     guestName,
     parseInt(fontSize),
     color,
-    parseInt(letterSpacing)
+    parseInt(letterSpacing),
   );
 
   return new Response(guestImageBuffer, {
@@ -86,7 +90,7 @@ function drawTextWithLetterSpacing(
   text: string,
   x: number,
   y: number,
-  letterSpacing: number = 0
+  letterSpacing: number = 0,
 ) {
   let currentX = x;
   for (const char of text) {
@@ -101,7 +105,7 @@ async function addGuestNameToImage(
   guestName: string,
   fontSize: number,
   color: string,
-  letterSpacing: number
+  letterSpacing: number,
 ): Promise<Buffer> {
   const { width, height } = await sharp(imageBuffer).metadata();
   if (!width || !height) {
@@ -115,11 +119,18 @@ async function addGuestNameToImage(
   ctx.font = `${fontSize}px "Monument Grotesk", Sans`; // Use the registered font with a fallback
   ctx.fillStyle = color;
 
-  const textWidth = ctx.measureText(guestName).width + (guestName.length - 1) * letterSpacing;
+  const textWidth =
+    ctx.measureText(guestName).width + (guestName.length - 1) * letterSpacing;
   const xPosition = (width - textWidth) / 2;
   const yPosition = height / 2;
 
-  drawTextWithLetterSpacing(ctx, guestName, xPosition, yPosition, letterSpacing);
+  drawTextWithLetterSpacing(
+    ctx,
+    guestName,
+    xPosition,
+    yPosition,
+    letterSpacing,
+  );
 
   const canvasBuffer = canvas.toBuffer("image/png");
   const image = sharp(imageBuffer);
